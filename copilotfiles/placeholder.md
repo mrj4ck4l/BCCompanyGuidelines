@@ -1,0 +1,1 @@
+this folder is used to put the public agents and prompts.  For now, these are company-related, so look at the samples-directory to create your own.
