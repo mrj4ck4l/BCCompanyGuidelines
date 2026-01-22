@@ -1,5 +1,6 @@
 ---
 agent: iFacto.Documentation
+description: Documentation based on the changes you did.
 ---
 # /documentation – Documentation Writer for `Docs` Folder
 
@@ -115,10 +116,12 @@ When asked to update the changelog, the assistant must:
 
 1. **Only** write to `App/Docs/CHANGELOG.md`.
 2. **Group entries by ISO week number** in format `YYYY.WW` (e.g., `2025.47` for week 47 of 2025).
-3. **Verify JIRA issues** when a potential JIRA key is detected:
+3. **REQUIRE JIRA issue reference for ALL changelog entries**:
+	- If JIRA key not detected in commits: ASK USER to provide it before proceeding
 	- Use JIRA MCP tools (if available) to retrieve issue details
 	- Validate the issue exists and extract the issue summary
-	- Use issue information to enrich the changelog summary
+	- **Use JIRA issue summary as changelog entry text** (NOT commit message)
+	- Only proceed without JIRA if user explicitly confirms no JIRA issue exists
 4. Use **weekly grouping format** with bullet points for each change:
 
 	 ```text
@@ -439,33 +442,39 @@ When in doubt, prioritize:
 
 ---
 
-## MANDATORY WORKFLOW: Complete Documentation Analysis & Update
+## MANDATORY WORKFLOW: Branch-Specific Documentation Analysis & Update
 
 **CRITICAL**: When `/documentation` is invoked, the assistant **MUST ALWAYS** execute this complete workflow:
 
-### Step 1: Complete Git History Analysis (MANDATORY - NO EXCEPTIONS)
+### Step 1: Branch Diff Analysis (MANDATORY - NO EXCEPTIONS)
 
-1. **Retrieve ALL recent commits** using git tools:
-	- Use `git log` with appropriate date range (minimum 3-6 months, or all commits if repository is new) for example 'git log --pretty=format:"%H|%an|%ad|%s" --date=iso --reverse'
+1. **Identify current branch and retrieve branch-specific commits** using git tools:
+	- First, determine the current branch name using `git branch --show-current`
+	- Identify the main/master branch (typically `main` or `master`)
+	- Use `git log main..HEAD --pretty=format:"%H|%an|%ad|%s" --date=iso` (or `master..HEAD` if main branch is `master`)
+	- This retrieves ONLY commits in the current branch that are NOT in main/master
 	- This must be run in the root of the repository
-	- Extract ALL commit messages, authors, dates, commit-ids, and changed file paths
+	- Extract ALL commit messages, authors, dates, commit-ids, and changed file paths for these branch-specific commits
 	- Focus on files in `App/` and `Test/` folders
 	- Detect ALL JIRA issue references in commit messages (e.g., `BEG-123`, `JIRA-456`, pattern: `[A-Z]+-[0-9]+`)
+	- **If NO JIRA issue reference is detected in commits**: STOP and ask the user to provide the JIRA issue key for the changelog
 
-2. **Cross-reference EVERY commit with existing CHANGELOG.md**:
+2. **Cross-reference branch commits with existing CHANGELOG.md**:
 	- Read complete current `App/Docs/CHANGELOG.md` content
-	- **For EVERY SINGLE commit found**, verify if a corresponding changelog entry exists
-	- Create a list of ALL commits missing from changelog
+	- **For EVERY SINGLE commit found in the branch diff**, verify if a corresponding changelog entry exists
+	- Create a list of ALL branch-specific commits missing from changelog
 	- **DO NOT skip any commits** - document everything, even minor changes
 
 3. **Retrieve JIRA details for ALL detected issue keys**:
-	- For EVERY JIRA key found in commits, call JIRA MCP tools
+	- For EVERY JIRA key found in branch commits (or provided by user), call JIRA MCP tools
 	- Extract issue summary, description, type, status, and acceptance criteria
-	- If JIRA MCP unavailable, proceed with commit message as source
+	- **CRITICAL**: Use JIRA issue summary as the primary source for changelog entry text, NOT commit messages
+	- If JIRA MCP unavailable, ask user to provide JIRA issue details manually
+	- Commit messages should only be used if absolutely no JIRA reference exists and user cannot provide one
 
-### Step 2: Comprehensive Documentation Gap Analysis (MANDATORY FOR EVERY COMMIT)
+### Step 2: Comprehensive Documentation Gap Analysis (MANDATORY FOR EVERY BRANCH COMMIT)
 
-**For EVERY SINGLE commit found in git history**, the assistant must determine:
+**For EVERY SINGLE commit found in the branch diff**, the assistant must determine:
 
 1. **CHANGELOG.md entry exists and is complete?**
 	- If NO entry: Create one immediately
@@ -553,10 +562,13 @@ The assistant must **immediately and automatically**:
 	- Link to CHANGELOG.md prominently
 
 2. **Update `App/Docs/CHANGELOG.md`** (REQUIRED):
-	- Add ALL missing commit entries
-	- Enhance existing entries with JIRA links and better summaries
+	- Add ALL missing commit entries using JIRA issue summary (not commit message)
+	- Each entry MUST reference a JIRA issue key (ask user if missing)
+	- Use JIRA issue summary as the changelog entry text
+	- Format: `[JIRA-KEY](https://ifacto.atlassian.net/browse/JIRA-KEY) – <JIRA issue summary>`
 	- Add clickable markdown links to related documentation
 	- Use format: `[See: Folder/File.md](Folder/File.md)`
+	- Only fall back to commit messages if no JIRA issue exists after asking user
 
 3. **Create/Update `App/Docs/Users/*.md`**:
 	- Create new files for undocumented features
@@ -588,12 +600,12 @@ The assistant must **immediately and automatically**:
 **The assistant MUST:**
 - Execute ALL four steps completely for EVERY invocation of `/documentation`
 - Read code files to verify EVERY piece of documentation
-- Create documentation for EVERY commit found in git history
+- Create documentation for EVERY commit found in the branch diff (current branch vs main/master)
 - Fix EVERY inaccuracy found during code verification
 - Never skip steps or commits
 - Never assume documentation is complete
 - Never assume documentation is accurate
-- Work systematically through ALL commits, oldest to newest
+- Work systematically through ALL branch-specific commits, oldest to newest
 
 **The assistant MUST NOT:**
 - Ask "Should I document X?" → Always YES, document everything

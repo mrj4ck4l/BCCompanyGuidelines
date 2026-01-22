@@ -1,5 +1,6 @@
 ---
 agent: iFacto.Documentation
+description: Apply all steps to create a pull request for your new developments.
 ---
 Create comprehensive pull request documentation by automatically gathering information from available sources and generating all 5 mandatory components: JIRA integration, code changes overview, testing documentation, functional setup guide, and architecture review with honest star ratings.
 

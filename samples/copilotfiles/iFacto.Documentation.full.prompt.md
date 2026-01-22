@@ -1,5 +1,6 @@
 ---
-agent: iFacto.Documentation
+agent: iFacto.Documentation.full
+description: Generate a full set of documentation based on all git commits, ensuring accuracy and completeness by verifying against code and JIRA issues.
 ---
 # /documentation – Documentation Writer for `Docs` Folder
 
